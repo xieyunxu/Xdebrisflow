@@ -1,2 +1,3 @@
 # Xdebrisflow
 Simution of multiphase debris-flow using shallow water equations
+which foucs on the simlutions of whole processes of landslide,debris flow,flash flooding...
