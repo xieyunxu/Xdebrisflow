@@ -1,0 +1,14 @@
+<RCC>
+    <qresource prefix="/pic">
+        <file>1.png</file>
+        <file>2.png</file>
+        <file>3.png</file>
+        <file>5.png</file>
+        <file>6.png</file>
+        <file>7.jpg</file>
+        <file>56.png</file>
+        <file>log_1.png</file>
+        <file>MainWindow.png</file>
+        <file>white.png</file>
+    </qresource>
+</RCC>
