@@ -9,20 +9,21 @@ Data::Data()
       _cellSize(0),_dx(_cellSize),_dy(_cellSize),
       _xCorner(0),_yCorner(0),
       _sourceMode(SM::import_Txt),_sourceShape(SS::rectangle),_timeTypeMode(TM::Variable_T),
-      _sourceDepth(pow(10,-6)),_sourcePoint(Point(0,0)),_sourceLen(Point(0,0)),
-      _miu1(0.4),_miu2(0.5), _d50(0.01),_I0(0.3),_cs(0.6),_uw(2),
+      _sourceDepth(static_cast<float>(pow(10,-6))),_sourcePoint(Point(0,0)),_sourceLen(Point(0,0)),
+      _miu1(static_cast<float>(0.4)),_miu2(0.5), _d50(static_cast<float>(0.01)),_I0(static_cast<float>(0.3)),_cs(static_cast<float>(0.6)),_uw(2),
       _frictionModel(FM::Comlomb),
-      _totalTime(50),_dt(0.01),
-      _eps(pow(10,-6)),_alfa(1.1),
+      _totalTime(50),_dt(static_cast<float>(0.01)),
+      _eps(static_cast<float>(pow(10,-6))),_alfa(static_cast<float>(1.1)),
       _intervalT(10)
 {
     init_KeyWord();
-    _courant=1/(2*_alfa)*(sqrt(4+4*_alfa-_alfa*_alfa)-2-_eps);
+    _courant=static_cast<float>(1/(2*_alfa)*(sqrt(4+4*_alfa-_alfa*_alfa)-2-_eps));
 #if 1
     _in_path="/home/yancys/Qt/Examples/Yigong_landslide";
 #endif
 
 //    _in_path="D:\\QT\\Documents\\Yigong_landslide\\";
+    _in_path="D:\\QT\\QTcode\\Examples\\Yigong_landslide-float\\";
 
 
 }

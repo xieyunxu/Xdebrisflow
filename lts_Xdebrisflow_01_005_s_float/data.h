@@ -123,11 +123,13 @@ public:
     inline std::string get_char_System(){
         switch (_systemType){
         case System::Lin:{return "/";}
-        case System::Win:{return "\\";}}}
+        case System::Win:{return "\\";}
+        default:{return  "\\";}}}
     inline std::string get_OSType(){
         switch (_systemType){
         case System::Lin:{return "Linux";}
-        case System::Win:{return "Windows";}}}
+        case System::Win:{return "Windows";}
+        default:{return  "Linux";}}}
     inline void set_OSType(std::string sys){
         int new_sys;
         if(sys=="Linux"){new_sys=1;}
