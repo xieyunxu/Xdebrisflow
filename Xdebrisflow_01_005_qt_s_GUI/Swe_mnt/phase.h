@@ -27,28 +27,16 @@ enum DifferenceType
 class Matrix_data:public Size
 {
 public:
-    Matrix_data(double num=0)
+    Matrix_data(double defaults=0)
         :Size(Data::instance()->get_Row(),Data::instance()->get_Col())
     {
         _real_Row=_row+2;
         _real_Col=_col+2;
         _mat=new double*[_real_Row];
-        _mid_Re=new double*[_real_Row];
         for (int i=0;i<_real_Row;i++){  _mat[i]=new double[_real_Col];
-            _mid_Re[i]=new double[_real_Col];
             for (int j=0;j<_real_Col;j++)
-            {
-                _mat[i][j]=num;
-                _mid_Re[i][j]=_mat[i][j];
-            }
-        }
-        //std::cout<<"("<<Data::instance()->get_Row()<<"+2 "<<Data::instance()->get_Col()<<"+2) "
-         //       <<"Constructor of Map, Space Arrangment"<<std::endl;
-    }
-    ~Matrix_data(){delete []_mat;
-                   delete []_mid_Re;
-                   //std::cout<<"Destructor of Map, Space Killed"<<std::endl;
-                  }
+            {_mat[i][j]=defaults;}}}
+    ~Matrix_data(){delete []_mat;}
     Matrix_data(const Matrix_data& a);
     Matrix_data(const Matrix_data& a,DifferenceType diff);
     inline int getRow() const{return _row;}
@@ -77,7 +65,6 @@ public:
     friend class Swe_movemnt;
 private:
     double **_mat;
-    double **_mid_Re;
     int _real_Row;
     int _real_Col;
 };
@@ -104,8 +91,8 @@ public:
         }
         delete _Z;
     }
-    Size get_PhaseSize(){return _Z->get_RealSize();}
-    Size get_PhaseSize() const{return _Z->get_RealSize();}
+    inline Size get_PhaseSize(){return _Z->get_RealSize();}
+    inline Size get_PhaseSize() const{return _Z->get_RealSize();}
 private:
     Matrix_data* _U[3];
     Matrix_data* _F[3];

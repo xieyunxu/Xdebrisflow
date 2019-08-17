@@ -12,10 +12,12 @@ public:
     void update_Direction(const Phase& solid);
     void init_FrictionTerm(const Phase& solid);
     void init_GravityTerm(const Phase& solid);
+    void init_EntrainmentTerm(const Phase& solid);
     inline double get_Miu1(){return miu_quasi;}
     inline double get_Miu2(){return miu_shear;}
     inline void set_Miu1(double new_miu1){miu_quasi=new_miu1;}
     inline void set_Miu2(double new_miu2){miu_shear=new_miu2;}
+    inline double abs(double input){return (input>0?input:-input);}
 
 private:
     double miu_quasi;
@@ -23,6 +25,7 @@ private:
     Matrix_data* _sourceTerm[3];
     Matrix_data* _gravityTerm[2];
     Matrix_data* _frictionTerm[2];
+    Matrix_data* _entrainmentTerm;
     Matrix_data* _direction[2];
     Matrix_data* _speed;
     FM::FrictionModel _frictionModel;

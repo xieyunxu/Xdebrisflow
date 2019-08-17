@@ -7,8 +7,9 @@
 #include "data.h"
 class Point;
 class Phase;
-class MidPara_UNS;
 class Term;
+class MidPara;
+class MidPara_UNS;
 class Process_main:public QObject
 {
     Q_OBJECT
@@ -31,6 +32,8 @@ public:
     inline void settotalTime(double totaltime){_tlt = totaltime;}
 
 private:
+    MidPara* _mid;
+    MidPara_UNS* _mid_uns;
     Matrix_data* _stagRes[3];
     Matrix_data* _NUstagRes[3];
     Point* _maxSpeed;
@@ -46,7 +49,11 @@ private:
     int _timestepType;
     double _crt;
     double  _dt;
+    double _dt_after;
     double _tlt;
+    double courant;
+    double cellsize;
+    bool _warn_Flag=false;
 
     friend class Process_post;
     friend class MidPara;
@@ -56,8 +63,9 @@ private:
 class MidPara
 {
 public:
-    MidPara(Phase& solid, Process_main& _main);
+    MidPara(){}
     ~MidPara(){}
+    void update_SR(Phase& solid, Process_main& _main);
     Matrix_data Xmic(const Matrix_data& input_1,const Matrix_data& input_2);
     double Xmic(double input_1,double input_2);
     inline double min(double input_1,double input_2){return (input_1>input_2?input_2:input_1);}
@@ -71,8 +79,9 @@ private:
 class MidPara_UNS: public MidPara
 {
 public:
-    MidPara_UNS(Phase& solid, Process_main& _main);
+    MidPara_UNS(){}
     ~MidPara_UNS(){}
+    void update_UNSR(Phase& solid, Process_main& _main);
     friend class Process_main;
 };
 

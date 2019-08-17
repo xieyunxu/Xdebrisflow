@@ -12,6 +12,7 @@ Term::Term(double miu_1,double miu_2)
         _gravityTerm[i]=new Matrix_data;
         _frictionTerm[i]=new Matrix_data;}
     for (int i=0;i<3;i++){_sourceTerm[i]=new Matrix_data;}
+    _entrainmentTerm=new Matrix_data;
     _speed=new Matrix_data;
 }
 Term::~Term()
@@ -20,26 +21,29 @@ Term::~Term()
         delete _gravityTerm[i];
         delete _frictionTerm[i];}
     for (int i=0;i<3;i++){delete  _sourceTerm[i];}
+    delete _entrainmentTerm;
     delete _speed;
 }
 void Term::update_SourceTerm(const Phase& solid,const Process_main& main)
 {
+    update_Direction(solid);
     init_GravityTerm(solid);
     init_FrictionTerm(solid);
+    init_EntrainmentTerm(solid);
     for (int i=1;i<solid.get_PhaseSize().getRow_Size()-1;i++)
     {
         for (int j=1;j<solid.get_PhaseSize().getCol_Size()-1;j++)
         {
-            (*_sourceTerm[0])[i][j]=0;
+            (*_sourceTerm[0])[i][j]=-(*_entrainmentTerm)[i][j];
             (*_sourceTerm[1])[i][j]=-(*_gravityTerm[0])[i][j]
-                                    -(*_frictionTerm[0])[i][j];
+                    -(*_frictionTerm[0])[i][j];
             double stop_Flux_x=(*solid._U[1])[i][j]/main._dt;
             double stop_Flux_y=(*solid._U[2])[i][j]/main._dt;
             if(abs((*_frictionTerm[0])[i][j])>=abs(stop_Flux_x))
             {(*_sourceTerm[1])[i][j]=-(*_gravityTerm[0])[i][j]-stop_Flux_x;}
 
             (*_sourceTerm[2])[i][j]=-(*_gravityTerm[1])[i][j]
-                                    -(*_frictionTerm[1])[i][j];
+                    -(*_frictionTerm[1])[i][j];
             if(abs((*_frictionTerm[1])[i][j])>=abs(stop_Flux_y))
             {(*_sourceTerm[2])[i][j]=-(*_gravityTerm[1])[i][j]-stop_Flux_y;}
         }
@@ -73,7 +77,6 @@ void Term::init_GravityTerm(const Phase& solid)
 }
 void Term::init_FrictionTerm(const Phase& solid)
 {
-    update_Direction(solid);
     switch(_frictionModel)
     {
     case FM::Comlomb:
@@ -92,10 +95,49 @@ void Term::init_FrictionTerm(const Phase& solid)
     }
     case FM::Voellmy:
     {
+        double turbulence=Data::instance()->get_Turbulence();
+        double dynamic;
+        for (int k=0;k<2;k++)
+        {
+            for (int i=1;i<solid.get_PhaseSize().getRow_Size()-1;i++)
+            {
+                for (int j=1;j<solid.get_PhaseSize().getCol_Size()-1;j++)
+                {
+                    dynamic=(*_speed)[i][j]*(*_speed)[i][j]
+                            /(turbulence*(*solid._U[0])[i][j]);
+                    (*_frictionTerm[k])[i][j]=(9.8*miu_quasi
+                            *(*solid._U[0])[i][j]+dynamic)*(*_direction[k])[i][j];
+                }
+            }
+        }
         break;
     }
-    case FM::Rhelogic:
+    case FM::miu_I:
     {
+        double d50=Data::instance()->get_D50();
+        double I0=Data::instance()->get_I0();
+        double cs=Data::instance()->get_Cs();
+        double miu_I=0;
+        for (int k=0;k<2;k++)
+        {
+            for (int i=1;i<solid.get_PhaseSize().getRow_Size()-1;i++)
+            {
+                for (int j=1;j<solid.get_PhaseSize().getCol_Size()-1;j++)
+                {
+                    miu_I=(miu_quasi+
+                                (miu_shear-miu_quasi)*(*_speed)[i][j]*d50
+                                /(I0*pow((*solid._U[0])[i][j],1.5)*sqrt(cs*9.8)
+                                +(*_speed)[i][j]*d50));
+                    (*_frictionTerm[k])[i][j]=9.8*miu_I
+                            *(*solid._U[0])[i][j]*(*_direction[k])[i][j];
+                }
+            }
+        }
+        break;
+    }
+    case FM::miu_V:
+    {
+        double uw=Data::instance()->get_Uw();
         for (int k=0;k<2;k++)
         {
             for (int i=1;i<solid.get_PhaseSize().getRow_Size()-1;i++)
@@ -103,9 +145,8 @@ void Term::init_FrictionTerm(const Phase& solid)
                 for (int j=1;j<solid.get_PhaseSize().getCol_Size()-1;j++)
                 {
                     (*_frictionTerm[k])[i][j]=9.8*(miu_quasi+
-                            (miu_shear-miu_quasi)*(*_speed)[i][j]*Data::instance()->get_D50()
-                            /(Data::instance()->get_I0()*pow((*solid._U[0])[i][j],1.5)+sqrt(Data::instance()->get_Cs()*9.8)
-                            +(*_speed)[i][j]*Data::instance()->get_D50()))
+                                                   (miu_shear-miu_quasi)
+                                                   /(1+uw/(*_speed)[i][j]))
                             *(*solid._U[0])[i][j]*(*_direction[k])[i][j];
                 }
             }
@@ -113,7 +154,21 @@ void Term::init_FrictionTerm(const Phase& solid)
         break;
     }
     }
-
+}
+void Term::init_EntrainmentTerm(const Phase &solid)
+{
+    for(int i=1;i<solid.get_PhaseSize().getRow_Size()-1;i++)
+    {
+        for(int j=1;j<solid.get_PhaseSize().getCol_Size()-1;j++)
+        {
+#if 0
+            double coef =0.125;
+            (*_entrainmentTerm)[i][j]=coef*(1)*(*_speed)[i][j]*pow(Data::instance()->get_D50(),-0.2)
+                    /(*solid._U[0])[i][j];
+#endif
+            (*_entrainmentTerm)[i][j]=0;
+        }
+    }
 }
 void Term::update_Direction(const Phase& solid)
 {

@@ -6,11 +6,15 @@
 #include "data.h"
 Process_main::Process_main(QObject* parent)
     :QObject (parent),
-      _timestepType(Data::instance()->get_TimeStepMode()),_crt(0),_dt(0.001),
-      _tlt(Data::instance()->get_TotalTime())
+      _timestepType(Data::instance()->get_TimeStepMode())
+    ,_crt(0),_dt(0.001),_dt_after(Data::instance()->get_DtInitial())
+    ,_tlt(Data::instance()->get_TotalTime())
+    ,courant(Data::instance()->get_Courant())
+    ,cellsize(Data::instance()->get_cellSize())
 {
+    _mid=new MidPara;
+    _mid_uns=new MidPara_UNS;
     _maxSpeed=new Point;
-
     for (int i=0;i<3;i++)
     {
 
@@ -27,6 +31,8 @@ Process_main::Process_main(QObject* parent)
 }
 Process_main::~Process_main()
 {
+    delete _mid;
+    delete _mid_uns;
     delete _maxSpeed;
     for (int i=0;i<3;i++)
     {
@@ -48,6 +54,8 @@ void Process_main::RunIteration(Phase& solid,Term& term)
     {
         for (int j=1;j<solid.get_PhaseSize().getCol_Size()-1;j++)
         {
+            if((*solid._U[0])[i][j]<0)
+            {(*solid._U[0])[i][j]=eps;_warn_Flag=true;}
             (*solid._F[0])[i][j]=(*solid._U[1])[i][j];
             (*solid._F[1])[i][j]=(*solid._U[1])[i][j] * (*solid._U[1])[i][j]/((*solid._U[0])[i][j]+eps)+9.8/2*(*solid._U[0])[i][j]*(*solid._U[0])[i][j];
             (*solid._F[2])[i][j]=(*solid._U[1])[i][j] * (*solid._U[2])[i][j]/((*solid._U[0])[i][j]+eps);
@@ -58,14 +66,15 @@ void Process_main::RunIteration(Phase& solid,Term& term)
         }
 
     }
+    if(_warn_Flag){std::cout<<"Fatal Warning(h<0)!!!!"<<std::endl;_warn_Flag=false;}
     /*Scheme ENO(WENO)*/
 #if 1
-    maxSpeed(solid);
-    MidPara mid(solid,*this);
-    staggerResult(solid);
-    MidPara_UNS mid_uns(solid,*this);
+    this->maxSpeed(solid);
+    _mid->update_SR(solid,*this);
+    this->staggerResult(solid);
+    _mid_uns->update_UNSR(solid,*this);
     term.update_SourceTerm(solid,*this);
-    NUstaggerResult(solid,term);
+    this->NUstaggerResult(solid,term);
 #endif
     /*Scheme ENO(WENO)*/
     /*Scheme CLF(CF)*/
@@ -87,7 +96,7 @@ void Process_main::LaxWendroffResult(Phase &solid, Term &term)
             {/*U(i+1,j+1/2)->F(i+1,j+1/2)*/
                 (*_Uy[k])[i][j]=0.5*((*solid._U[k])[i+1][j+1]+(*solid._U[k])[i+1][j])
                         +0.25*(_dt/cellsize)*((*solid._G[k])[i+1][j+1]-(*solid._G[k])[i+1][j]);
-             /*U(i+1/2,j+1)->G(i+1/2,j+1)*/
+                /*U(i+1/2,j+1)->G(i+1/2,j+1)*/
                 (*_Ux[k])[i][j] =0.5*((*solid._U[k])[i+1][j+1]+(*solid._U[k])[i][j+1])
                         +0.25*(_dt/cellsize)*((*solid._F[k])[i+1][j+1]-(*solid._F[k])[i][j+1]);
             }
@@ -149,8 +158,8 @@ void Process_main::LaxWendroffResult(Phase &solid, Term &term)
         {
             for (int j=1;j<solid.get_PhaseSize().getCol_Size()-1;j++)
             {
-                (*solid._U[k])[i][j]=(*_NUstagRes[k])[i][j];
-                        //+_dt*(*term._sourceTerm[k])[i][j];
+                (*solid._U[k])[i][j]=(*_NUstagRes[k])[i][j]
+                +_dt*(*term._sourceTerm[k])[i][j];
             }
         }
     }
@@ -171,17 +180,6 @@ void Process_main::staggerResult(Phase& solid)
                         + ((*_Uy[k])[i][j]-(*_Uy[k])[i][j+1])+((*_Uy[k])[i+1][j]-(*_Uy[k])[i+1][j+1]))/16
                         -_dt/(2*dx)*((*solid._F[k])[i+1][j]-(*solid._F[k])[i][j]+(*solid._F[k])[i+1][j+1]-(*solid._F[k])[i][j+1])
                         -_dt/(2*dy)*((*solid._G[k])[i][j+1]-(*solid._G[k])[i][j]+(*solid._G[k])[i+1][j+1]-(*solid._G[k])[i+1][j]);
-            }
-        }
-    }
-    for (int k=0;k<3;k++)
-    {
-        for(int i=1;i<solid.get_PhaseSize().getRow_Size()-1;i++)
-        {
-            for (int j=1;j<solid.get_PhaseSize().getCol_Size()-1;j++)
-            {
-
-                (*solid._U[k])[i][j]=(*_stagRes[k])[i][j];
             }
         }
     }
@@ -242,8 +240,10 @@ void Process_main::maxSpeed(const Phase& solid)
     {
         for (int j=1;j<solid.get_PhaseSize().getCol_Size()-1;j++)
         {
-            input_x=abs2((*solid._U[1])[i][j]/(*solid._U[0])[i][j]+sqrt(9.8*(*solid._U[0])[i][j]));
-            input_y=abs2((*solid._U[2])[i][j]/(*solid._U[0])[i][j]+sqrt(9.8*(*solid._U[0])[i][j]));
+
+            input_x=abs2((*solid._U[1])[i][j]/(*solid._U[0])[i][j])+sqrt(9.8*(*solid._U[0])[i][j]);
+            input_y=abs2((*solid._U[2])[i][j]/(*solid._U[0])[i][j])+sqrt(9.8*(*solid._U[0])[i][j]);
+            // std::cout<<input_x<<" ";
             _maxSpeed->_x=(_maxSpeed->_x>=input_x?_maxSpeed->_x:input_x);
             _maxSpeed->_y=(_maxSpeed->_y>=input_y?_maxSpeed->_y:input_y);
         }
@@ -252,15 +252,16 @@ void Process_main::maxSpeed(const Phase& solid)
 void Process_main::count_time()
 {
     _crt+=_dt;
-    if (_timestepType == 1)
-    {_dt=Data::instance()->get_Courant() * Data::instance()->get_cellSize()/max(_maxSpeed->_x,_maxSpeed->_y);
-        if(_dt+_crt>ceil(_crt)&&_crt!=ceil(_crt)){_dt=ceil(_crt)-_crt;}}
-    else if (_timestepType == 2){_dt=static_cast<double>(0.001);}
-    std::cout<<" crt = "<<_crt<<"   dt = "<<_dt<<" Status: "<<Data::instance()->Status()<<std::endl;
+    double maxVelo=max(_maxSpeed->_x,_maxSpeed->_y);
+    if (_timestepType == 1){_dt= courant*cellsize/maxVelo;}
+    else if(_timestepType == 2){_dt=_dt_after;}
+    if(_dt+_crt>ceil(_crt)&&_crt!=ceil(_crt))
+    {_dt=ceil(_crt)-_crt;}
+    std::cout<<" crt = "<<_crt<<"   dt = "
+    <<_dt<<" MaxSpeed "<<maxVelo<<std::endl;
 }
-MidPara::MidPara(Phase& solid, Process_main& _main)
+void MidPara::update_SR(Phase& solid, Process_main& _main)
 {
-
     for (int k=0;k<3;k++)
     {
         for (int i=1;i<solid.get_PhaseSize().getRow_Size()-1;i++)
@@ -362,8 +363,7 @@ double MidPara::Xmic(double input_1,double input_2)
     double mid_2=(input_1+input_2)/2;
     return (0.5*(sign(mid_1)+sign(mid_2))*min(abs2(mid_1),abs2(mid_2)));
 }
-MidPara_UNS::MidPara_UNS(Phase& solid, Process_main& _main)
-    :MidPara (solid,_main)
+void MidPara_UNS::update_UNSR(Phase& solid, Process_main& _main)
 {
     for (int k=0;k<3;k++)
     {

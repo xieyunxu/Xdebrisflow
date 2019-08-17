@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <math.h>
 #include "swe_movemnt.h"
 #include "process_pre.h"
 #include "process_main.h"
@@ -34,12 +35,13 @@ void Swe_movemnt::init_SWEmnt()
     _post->make_AnimationFile(*_solid,*_main);
     Data::instance()->set_Status(SS::RuningStatus);
     connect(_post,SIGNAL(getCurrtimeSig(double)),this,SIGNAL(getCurrtimeSig(double)));
+    std::cout<<"Initiation Finish"<<std::endl;
 }
 void Swe_movemnt::running_SWEmnt()
 {
-    if(_main->currentTime()!=0){init_SWEmnt();}
-    std::cout<<_main->currentTime()<<" "<<_main->totalTime()<<" "<<Data::instance()->Status();
-   while (_main->currentTime()<_main->totalTime()
+    if(floor(_main->currentTime())!=0)
+    {init_SWEmnt();}
+    while (_main->currentTime()<_main->totalTime()
            &&Data::instance()->Status()==SS::RuningStatus)
     {
         _main->RunIteration(*_solid,*_term);
@@ -47,15 +49,17 @@ void Swe_movemnt::running_SWEmnt()
         _post->make_AnimationFile(*_solid,*_main);
     }
 
-    std::cout<<"Iteration finish"<<std::endl;
+    std::cout<<"Simulation Finish"<<std::endl;
     emit sweMntfinishSig();
 }
 void Swe_movemnt::preChecksize()
 {
     std::ifstream pre_Read;
     std::string c=Data::instance()->get_char_System();
-    pre_Read.open(Data::instance()->openDir()+c+"Input"+c+"z"+".txt");
-    if(!pre_Read){std::cout<<"Pre_readSize error, the input folder is not exist, please check"<<std::endl;exit(0);}
+    std::string in_path=Data::instance()->openDir()+c+"Input"+c+"z"+".txt";
+    //std::cout<<in_path;
+    pre_Read.open(in_path);
+    if(!pre_Read){std::cout<<"Pre_readSize error, the input folder is not exist, please check"<<std::endl;exit(-1);}
     else
     {
         std::string keywords;
@@ -72,35 +76,36 @@ void Swe_movemnt::preCheckinputPara()
     std::ifstream input_Para;
     std::string ch=Data::instance()->get_char_System();
     std::string path_InputPara=(Data::instance()->openDir()+ch+"Input"+ch+"Input"+".txt");
+    std::cout<<path_InputPara;
     input_Para.open(path_InputPara);
-    if(!input_Para){std::cout<<"Pre_readInputPara error, Input file not found"<<std::endl;exit(0);}
+    if(!input_Para){std::cout<<"Pre_readInputPara error, Input file not found"<<std::endl;exit(-1);}
     else {
-        char buffer[100]=" ";
+        char buffer[1000]=" ";
         std::vector<std::string> vec_Para;
         vec_Para.reserve(100);
-        while(input_Para.getline(buffer,100))
+        while(input_Para.getline(buffer,1000))
         {FO::stringSplit(buffer,' ',vec_Para);
             if(vec_Para.size()>=2)
             {preTranslatePara(vec_Para);
-                //                for (int i=0;i<vec_Para.size();i++)
-                //                {std::cout<<"vec["<<i<<"]=("<<vec_Para[i]<<") ";}
-                //                std::cout<<std::endl;
+//                                for (int i=0;i<vec_Para.size();i++)
+//                                {std::cout<<"vec["<<i<<"]=("<<vec_Para[i]<<") ";}
+//                                std::cout<<std::endl;
             }
             else if(vec_Para.size()==1)
-            {std::cout<<"Value of KeyWord is not found"<<std::endl;exit(-1);}
+            {std::cout<<"KeyWord not found"<<std::endl;exit(-1);}
             else{continue;}
         }
     }
 }
 void Swe_movemnt::preTranslatePara(const std::vector<std::string>& vec)
-{
-    //    "System"
-    //    ,"GUI"
-    //    ,"Tlt"
-    //    ,"Record"
-    //    ,"TimeStep"
-    //    ,"SourceMode"
-    //    ,"Friction"
+{   //  #(HEAD) Keyword    Values(Defaults)           Tips
+    //  #       System     Linux Windows(Linux)       string "\\"(W) "/"(L)
+    //  #       ,GUI        bool 0 1(1)                    GUI have not finish yet
+    //  #       ,Tlt        double(66)
+    //  #       ,Record     double(10)               dat:tecplot  txt:surfer,vim,Ultraedit...
+    //  #       ,TimeStep   1  2(1)
+    //  #       ,SourceMode 1  2(1)                  1:from txt;2:makeshape
+    //  #       ,Friction   1 2 3 4                  1:C ;2:V ;3:miuI; 4:miuU
     std::vector<std::string> kwSource=Data::instance()->get_KeyWord();
     if(vec[0]==kwSource[0]){
         std::cout<<"Found keyword "<<"SystemType"<<std::endl;
@@ -141,12 +146,15 @@ void Swe_movemnt::preTranslatePara(const std::vector<std::string>& vec)
         {
             Data::instance()->set_TimeStepMode(vec[1]);
             std::cout<<"Now TimeStep Mode="<<vec[1]<<std::endl;
+            if(FO::stringToInt(vec[1])==2
+                    &&vec.size()==3)
+            {Data::instance()->set_DtInitial(FO::stringToDouble(vec[2]));}
         }
         else{std::cout<<"Miss self-set value of TimeStep Mode"<<std::endl;}
 
     }
     if(vec[0]==kwSource[5]){
-        std::cout<<"Found keyword "<<"SourceMode1"<<std::endl;
+        std::cout<<"Found keyword "<<"SourceMode"<<std::endl;
         if(vec[1]!=" "&&vec.size()>=2)
         {
             Data::instance()->set_SourceMode(FO::stringToInt(vec[1]));
@@ -160,10 +168,9 @@ void Swe_movemnt::preTranslatePara(const std::vector<std::string>& vec)
                     if(FO::stringToInt(vec[6])>=0){Data::instance()->set_SourceLen_X(FO::stringToInt(vec[6]));}
                     if(FO::stringToInt(vec[7])>0){Data::instance()->set_SourceLen_Y(FO::stringToInt(vec[7]));}
                     else{Data::instance()->set_SourceLen_Y(FO::stringToInt(vec[6]));}}
-            }
-            else{std::cout<<"Vari Nums error "<<vec.size()<<std::endl;
-                std::cout<<vec.size()<<std::endl;
-                exit(-1);}
+                else{std::cout<<"Variable nums error of keyword SourceMode"<<vec.size()<<std::endl;
+                    std::cout<<vec.size()<<std::endl;
+                    exit(-1);}}
         }
     }
     if(vec[0]==kwSource[6]){
@@ -172,6 +179,30 @@ void Swe_movemnt::preTranslatePara(const std::vector<std::string>& vec)
         {
             Data::instance()->set_FrictionModel(FO::stringToInt(vec[1]));
             std::cout<<"Now Friction Mode="<<vec[1]<<std::endl;
+            if(vec.size()>2){
+                Data::instance()->set_Miu1(FO::stringToDouble(vec[2]));
+                if(FO::stringToInt(vec[1])==2){
+                    if(vec.size()==4){
+                        Data::instance()->set_Turbulence(FO::stringToInt(vec[3]));
+                    }
+                    else {std::cout<<"Warning: Voellmy type friction para num error";exit(-1);}
+                }
+                if(FO::stringToInt(vec[1])==3){
+                    if(vec.size()==7){
+                        Data::instance()->set_Miu2(FO::stringToDouble(vec[3]));
+                        Data::instance()->set_I0(FO::stringToDouble(vec[4]));
+                        Data::instance()->set_D50(FO::stringToDouble(vec[5]));
+                        Data::instance()->set_Cs(FO::stringToDouble(vec[6]));}
+                    else {std::cout<<"Warning: miuI type friction para num error";exit(-1);}
+                }
+                if(FO::stringToInt(vec[1])==4){
+                    if(vec.size()==5){
+                        Data::instance()->set_Miu2(FO::stringToDouble(vec[3]));
+                        Data::instance()->set_Uw(FO::stringToDouble(vec[4]));}
+                    else {std::cout<<"Warning: miuU type friction para num error";exit(-1);}
+                }
+            }
+            else{std::cout<<"Warning: Use default value of #Friction"<<std::endl;}
         }
     }
 }
