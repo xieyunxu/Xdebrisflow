@@ -9,16 +9,12 @@ Matrix_data::Matrix_data(const Matrix_data& a)
     _real_Row=a._real_Row;
     _real_Col=a._real_Col;
     _mat=new double*[_real_Row];
-    _mid_Re=new double*[_real_Row];
     for (int i=0;i<_real_Row;i++)
-    {  _mat[i]=new double[_real_Col];
-        _mid_Re[i]=new double[_real_Col];
-    }
+    {  _mat[i]=new double[_real_Col];}
     for (int i=0;i<_real_Row;i++)
     {
         for (int j=0;j<_real_Col;j++){
-            _mat[i][j]=a._mat[i][j];
-            _mid_Re[i][j]=0;}
+            _mat[i][j]=a._mat[i][j];}
     }
 }
 Matrix_data::Matrix_data(const Matrix_data& a,DifferenceType diff)
@@ -104,7 +100,7 @@ Matrix_data& Matrix_data::operator+(const Matrix_data& right)
     for (int i=1;i<_real_Row-1;i++)
     {
         for (int j=1;j<_real_Col-1;j++)
-        {*_re[i][j]=this->_mid_Re[i][j]+right._mat[i][j];}
+        {*_re[i][j]=this->_mat[i][j]+right._mat[i][j];}
     }
     std::cout<<__FUNCTION__<<" over"<<std::endl;
     return *_re;
@@ -115,7 +111,7 @@ Matrix_data& Matrix_data::operator-(const Matrix_data& right)
     for (int i=1;i<_real_Row-1;i++)
     {
         for (int j=1;j<_real_Col-1;j++)
-        {*_re[i][j]=this->_mid_Re[i][j]-right._mat[i][j];}
+        {*_re[i][j]=this->_mat[i][j]-right._mat[i][j];}
     }
     return *_re;
 }
@@ -125,7 +121,7 @@ Matrix_data& Matrix_data::operator*(const Matrix_data& right)
     for (int i=1;i<_real_Row-1;i++)
     {
         for (int j=1;j<_real_Col-1;j++)
-        {*_re[i][j]=this->_mid_Re[i][j]*right._mat[i][j];}
+        {*_re[i][j]=this->_mat[i][j]*right._mat[i][j];}
     }
     return *_re;
 }
@@ -145,7 +141,7 @@ Matrix_data& Matrix_data::operator/(const Matrix_data& right)
     for (int i=1;i<_real_Row-1;i++)
     {
         for (int j=1;j<_real_Col-1;j++)
-        {*_re[i][j]=this->_mid_Re[i][j]/right._mat[i][j];}
+        {*_re[i][j]=this->_mat[i][j]/right._mat[i][j];}
     }
     return *_re;
 }

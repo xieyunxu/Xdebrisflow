@@ -26,7 +26,8 @@ enum FrictionModel
 {
     Comlomb=1,
     Voellmy=2,
-    Rhelogic=3
+    miu_I=3,
+    miu_V=4
 };
 }
 namespace SM {
@@ -100,12 +101,15 @@ private:
     //Constutitive model
     double _miu1;
     double _miu2;
+    int _turbulence;
     double _d50;
     double _I0;
     double _cs;
+    double _uw;
     FM::FrictionModel _frictionModel;
     //Time
     double _totalTime;
+    double _dt;
     //Scheme info
     double _eps;
     double _alfa;
@@ -120,11 +124,13 @@ public:
     inline std::string get_char_System(){
         switch (_systemType){
         case System::Lin:{return "/";}
-        case System::Win:{return "\\";}}}
+        case System::Win:{return "\\";}
+        default:{return  "\\";}}}
     inline std::string get_OSType(){
         switch (_systemType){
         case System::Lin:{return "Linux";}
-        case System::Win:{return "Windows";}}}
+        case System::Win:{return "Windows";}
+        default:{return  "Linux";}}}
     inline void set_OSType(std::string sys){
         int new_sys;
         if(sys=="Linux"){new_sys=1;}
@@ -210,20 +216,29 @@ public:
     inline void set_Miu2(double new_miu2){_miu2=new_miu2;}
     inline double get_Miu1(){return _miu1;}
     inline double get_Miu2(){return _miu2;}
+    inline int get_Turbulence(){return _turbulence;}
+    inline void set_Turbulence(int new_tur){_turbulence=new_tur;}
     inline void set_D50(double new_d50){_d50=new_d50;}
     inline double get_D50(){return _d50;}
     inline double get_I0(){return _I0;}
+    inline void set_I0(double new_I0){_I0=new_I0;}
     inline double get_Cs(){return _cs;}
+    inline void set_Cs(double new_cs){_cs=new_cs;}
+    inline double get_Uw(){return _uw;}
+    inline void set_Uw(double new_uw){_uw=new_uw;}
     inline FM::FrictionModel get_FrictionModel(){return _frictionModel;}
     inline void set_FrictionModel(int new_model){
         switch (new_model) {
         case 1:{_frictionModel=FM::Comlomb;break;}
         case 2:{_frictionModel=FM::Voellmy;break;}
-        case 3:{_frictionModel=FM::Rhelogic;break;}
+        case 3:{_frictionModel=FM::miu_I;break;}
+        case 4:{_frictionModel=FM::miu_V;break;}
         default:{break;}}}
     //Time
     inline double get_TotalTime(){return _totalTime;}
     inline void set_TotalTime(double new_tlt){_totalTime=new_tlt;}
+    inline double get_DtInitial(){return _dt;}
+    inline void set_DtInitial(double new_dt){_dt=new_dt;}
     //Scheme info
     inline void set_Eps(double new_eps){_eps = new_eps;}
     inline double get_Eps(){return _eps;}

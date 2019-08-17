@@ -20,9 +20,9 @@ void Process_post::make_AnimationFile(const Phase& solid,const Process_main& _ma
         outFile << "Title=\"results_Animation\"" << endl;
         outFile << "VARIABLES = \"X\"  \"Y\"  \"Surface\"  \"Base\" \"Height\"" << endl;
         outFile << "ZONE T= " << "\"" <<_main._crt<< "\"" << " i= " << Data::instance()->get_Row() << " , " << " j= " << Data::instance()->get_Col() << endl;
-        for (int i=1;i<solid.get_PhaseSize().getRow_Size()-1;i++)
+        for (int j=1;j<solid.get_PhaseSize().getCol_Size()-1;j++)
         {
-            for (int j=1;j<solid.get_PhaseSize().getCol_Size()-1;j++)
+            for (int i=1;i<solid.get_PhaseSize().getRow_Size()-1;i++)
             {
 
                 double ix = i * Data::instance()->get_cellSize();

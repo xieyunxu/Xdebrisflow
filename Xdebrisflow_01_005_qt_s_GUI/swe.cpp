@@ -8,7 +8,7 @@ Swe::Swe(QObject* parent)
 {
     _swe_mnt =new Swe_movemnt;
     if(Data::instance()->get_GUIStatus()==false)
-    {_swe_mnt->running_SWEmnt();}
+    {_swe_mnt->running_SWEmnt();exit(0);}
     else{
         _swe_view =new Swe_view;
         _thread_Mnt=new QThread(this);

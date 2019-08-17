@@ -50,7 +50,6 @@ void Process_pre::Read_terrain_sourceFile(Phase& solid)
     {
     case SM::import_Txt:
     {
-        std::cout<<"case import_Txt";
         std::ifstream Source_File;
         double eps=Data::instance()->get_Eps();
         Source_File.open(Data::instance()->openDir()+ch+"Input"+ch+_source_Name+".txt");
